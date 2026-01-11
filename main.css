@@ -21,13 +21,13 @@ body {
 
 #road {
   width: 124px;
-  height: 1000px;
+  height: 600px;
   margin: 0 auto;
   background: url('asphalt.png') repeat-y;
   background-size: contain;
-  transform-origin: top center;
   transform: rotateX(50deg);
   transform-style: preserve-3d;
+  transform-origin: top center;
 }
 
 #runner {
@@ -36,12 +36,10 @@ body {
   position: absolute;
   left: 50%;
   margin-left: -92px;
-  bottom: 20px;
+  bottom: 0;
   background: url('runner.png') no-repeat;
-
-  transform-origin: bottom center;
-  transform: translateX(0) scale(0.5);
   transform-style: preserve-3d;
+  transform-origin: bottom center;
   animation: run 0.3s steps(4) infinite;
 }
 
@@ -73,8 +71,10 @@ body {
   position: absolute;
   width: 30px;
   height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: #ff3366;
-  opacity: 0.7;
   border: 1px solid #930025;
   box-sizing: border-box;
 }

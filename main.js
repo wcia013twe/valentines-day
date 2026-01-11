@@ -5,7 +5,7 @@ const X_SPEED = 500;
 const PROGRESS_SPEED = 40;
 const INIT_LANE = 1;
 const LANE_WIDTH = 142;
-const SPAWN_Z = 1000;
+const SPAWN_Z = -1000;
 
 const view = {
   scene: document.getElementById('scene'),
@@ -22,8 +22,7 @@ const state = {
     lane: INIT_LANE,
     ySpeed: 0,
   },
-  cubes: [],
-  coins: [],
+  objects: [],
 };
 
 function createFromBlueprint(blueprint) {
@@ -56,7 +55,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 function update(dt) {
-  const { runner, cubes, coins } = state;
+  const { runner } = state;
 
   const { position } = runner;
   const destinationX = getLaneX(runner.lane);
@@ -76,13 +75,13 @@ function update(dt) {
   state.progress += increment;
 }
 
-function draw(dt) {
-  const { progress, runner, cubes, coins } = state;
+function draw() {
+  const { progress, runner } = state;
   const { position } = runner;
 
   view.road.style.backgroundPositionY = `${progress}px`;
 
-  view.runner.style.transform = `translateX(${position.x}px) translateY(${position.y}px) scale(0.5)`;
+  view.runner.style.transform = `translateX(${position.x}px) translateY(${position.y}px) translateZ(-30px) scale(0.5)`;
   view.runner.style.animationPlayState =
     runner.position.y < 0 ? 'paused' : 'running';
 }
@@ -93,7 +92,7 @@ function loop(time) {
   prevTime = performance.now();
 
   update(dt);
-  draw(dt);
+  draw();
 
   requestAnimationFrame(loop);
 }
