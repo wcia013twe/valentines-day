@@ -1,7 +1,7 @@
 const LANES = 3;
-const JUMP_SPEED = -700;
-const GRAVITY = 2500;
-const X_SPEED = 1000;
+const JUMP_SPEED = -600;
+const GRAVITY = 2000;
+const X_SPEED = 300;
 const Z_SPEED = 100;
 const INIT_LANE = 1;
 const LANE_WIDTH = 46;
@@ -87,10 +87,10 @@ function spawnObjects() {
         position: cubePosition,
       });
 
-      position.y -= 50;
+      position.y -= 30;
+    } else {
+      state.objects.push(object);
     }
-
-    state.objects.push(object);
   }
 }
 
@@ -153,7 +153,7 @@ function draw() {
   for (const object of objects) {
     const position = project(object.position);
 
-    object.element.style.zIndex = Math.floor(-position.z);
+    object.element.style.zIndex = position.z < 0 ? Math.floor(-position.z) : 1;
     object.element.style.transform = getTransform(position);
   }
 }
