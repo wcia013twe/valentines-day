@@ -2,13 +2,11 @@ body {
   background: #ddd;
 }
 
-#scene {
+#game {
   margin: auto;
   width: 500px;
   height: 600px;
   position: relative;
-  perspective: 600px;
-  overflow: hidden;
   background: linear-gradient(
     to bottom,
     #6ec6ff 0%,
@@ -17,17 +15,30 @@ body {
     #ffffff 100%
   );
   border: 10px solid black;
+  overflow: hidden;
+}
+
+#scene {
+  position: relative;
+  width: 500px;
+  height: 600px;
+  left: 0;
+  top: 0;
+  perspective: 600px;
+  perspective-origin: 50% 0%;
 }
 
 #road {
-  width: 124px;
-  height: 600px;
-  margin: 0 auto;
+  position: absolute;
+  width: 400px;
+  margin-left: -200px;
+  height: 2500px;
+  left: 50%;
+  bottom: 0;
+  transform-origin: bottom center;
+  transform: rotateX(60deg); /* High angle for flat road */
   background: url('asphalt.png') repeat-y;
   background-size: contain;
-  transform: rotateX(50deg);
-  transform-style: preserve-3d;
-  transform-origin: top center;
 }
 
 #runner {
@@ -35,11 +46,11 @@ body {
   height: 244px;
   position: absolute;
   left: 50%;
+  top: 0;
   margin-left: -92px;
-  bottom: 0;
+  margin-top: -122px;
   background: url('runner.png') no-repeat;
-  transform-style: preserve-3d;
-  transform-origin: bottom center;
+  transform-origin: center center;
   animation: run 0.3s steps(4) infinite;
 }
 
@@ -60,17 +71,18 @@ body {
 .cube {
   position: absolute;
   left: 50%;
-  top: 400px;
-  width: 30px;
-  height: 30px;
+  top: 0;
+  width: 40px;
+  height: 40px;
+  margin-left: -20px;
   transform-style: preserve-3d;
   transform: translateX(-50%) translateZ(20px);
 }
 
 .cube .face {
   position: absolute;
-  width: 30px;
-  height: 30px;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -101,39 +113,29 @@ body {
 }
 
 .coin {
-  width: 80px;
-  height: 80px;
-  position: relative;
-  transform-style: preserve-3d;
-  transform-origin: center;
-  animation: spin 2s linear infinite;
-  margin: 100px auto;
-}
-
-.coin {
-  width: 50px;
-  height: 50px;
   position: absolute;
   left: 50%;
-  margin-left: -25px;
-  top: 200px;
+  top: 0;
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  margin-top: -13px;
+  /* animation: spin 2s linear infinite; */
   transform-origin: center center;
-  transform: translateZ(-25px);
-  animation: spin 1s linear infinite;
 }
 
 .coin .face {
   position: absolute;
   width: 100%;
   height: 100%;
-  border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, gold 40%, goldenrod 100%);
-  border: 3px solid goldenrod;
+  border: 2px solid goldenrod;
+  border-radius: 50%;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 14px;
   backface-visibility: hidden;
 }
 
