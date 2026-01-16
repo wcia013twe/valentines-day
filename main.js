@@ -223,7 +223,7 @@ function updateEntity(game, runner, entity, dt) {
   switch (entity.type) {
     case 'coin':
       if (
-        distance(entity.position, runner.position) <
+        distance(entity.position, runner.position) <=
         RUNNER_COIN_COLLECTION_DISTANCE
       ) {
         game.score++;
