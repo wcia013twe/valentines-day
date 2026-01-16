@@ -3,7 +3,6 @@ const LANE_WIDTH = 47;
 const GRAVITY = 2000;
 const INIT_GAME_SPEED = 150;
 const GAME_ACCELERATION = 6;
-const Z_INDEX_BEHIND_RUNNER = 100;
 
 const RUNNER_JUMP_SPEED = -600;
 const RUNNER_INIT_LANE = 1;
@@ -11,20 +10,21 @@ const RUNNER_Z = -410;
 const RUNNER_SPEED_X = 300;
 const RUNNER_SCALE = 0.2;
 const RUNNER_COIN_COLLECTION_DISTANCE = 30;
+const RUNNER_Z_INDEX_BEHIND = 100;
 
-const ENTITIES_DISTANCE_Z_BETWEEN = 50;
+const ENTITIES_Z_GAP = 50;
 const ENTITIES_PER_LEVEL = 30;
-const ENTITIES_SPAWN_LAST_Z = 40;
-const ENTITIES_SPAWN_FIRST_Z =
-  ENTITIES_SPAWN_LAST_Z + ENTITIES_PER_LEVEL * ENTITIES_DISTANCE_Z_BETWEEN;
-const ENTITIES_ELEVATED_Y = -75;
-const ENTITIES_DEATH_Z = -500;
-const ENTITIES_BEFORE_NEW_DIRECTION = 6;
+const ENTITIES_SPAWN_Z_LAST = 40;
+const ENTITIES_SPAWN_Z_FIRST =
+  ENTITIES_SPAWN_Z_LAST + ENTITIES_PER_LEVEL * ENTITIES_Z_GAP;
+const ENTITIES_Y_FLOATING = -75;
+const ENTITIES_BEFORE_DIRECTION_CHANGE = 6;
 const ENTITIES_BOMB_CHANCE = 0.3;
 const ENTITIES_DEATH_TIME = 0.2;
 
-const LEVEL_LENGTH = ENTITIES_SPAWN_FIRST_Z + 550;
+const LEVEL_LENGTH = ENTITIES_SPAWN_Z_FIRST + 550;
 
+// Values used to project a 3D point onto 2D space
 const ROAD_ANGLE = (60 * Math.PI) / 180;
 const ROAD_ANGLE_SIN = Math.sin(ROAD_ANGLE);
 const ROAD_ANGLE_COS = Math.cos(ROAD_ANGLE);
@@ -32,7 +32,8 @@ const ROAD_ANGLE_SIN_COS = ROAD_ANGLE_SIN * ROAD_ANGLE_COS;
 const PERSPECTIVE = 600;
 
 const view = {
-  game: document.getElementById('game'),
+  level: document.getElementById('level'),
+  score: document.getElementById('score'),
   scene: document.getElementById('scene'),
   road: document.getElementById('road'),
   runner: document.getElementById('runner'),
@@ -49,7 +50,7 @@ function getInitialState() {
   const state = {
     game: {
       isOver: false,
-      level: 1,
+      level: 0,
       levelProgress: 0,
       score: 0,
       speed: INIT_GAME_SPEED,
@@ -98,43 +99,27 @@ function distance(a, b) {
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2);
 }
 
-function checkBombCollision(runner, bomb) {
-  if (Math.abs(runner.z - bomb.z) > 1.5) {
-    return false;
-  }
-
-  if (Math.abs(runner.y - bomb.y) > 30) {
-    return false;
-  }
-
-  if (Math.abs(runner.x - bomb.x) > 26) {
-    return false;
-  }
-
-  return true;
-}
-
 function changeSpawnPosition(position) {
   const lanes = getAdjacentLanes(position.lane);
 
   // Equally possible options: new Y / Lane 1 / Lane 2
   const newDirection = Math.floor(Math.random() * (lanes.length + 1));
   if (newDirection === 0) {
-    position.y = position.y === 0 ? ENTITIES_ELEVATED_Y : 0;
+    position.y = position.y === 0 ? ENTITIES_Y_FLOATING : 0;
   } else {
     position.lane = lanes[newDirection - 1];
   }
 }
 
 function spawnLevelEntities(state) {
-  const initZ = ENTITIES_SPAWN_FIRST_Z;
+  const initZ = ENTITIES_SPAWN_Z_FIRST;
   const spawnPosition = { lane: 1, y: 0, z: initZ };
 
   state.game.level++;
   state.game.levelProgress = 0;
 
   for (let i = 0; i < ENTITIES_PER_LEVEL; i++) {
-    if (i % ENTITIES_BEFORE_NEW_DIRECTION === 0) {
+    if (i % ENTITIES_BEFORE_DIRECTION_CHANGE === 0) {
       changeSpawnPosition(spawnPosition);
     }
 
@@ -153,7 +138,7 @@ function spawnLevelEntities(state) {
     view.entities[i].style.opacity = 1;
     view.entities[i].style.zIndex = 0;
 
-    spawnPosition.z -= ENTITIES_DISTANCE_Z_BETWEEN;
+    spawnPosition.z -= ENTITIES_Z_GAP;
   }
 }
 
@@ -179,6 +164,7 @@ function handleGameEvents(state) {
       case ' ':
         if (state.game.isOver) {
           Object.assign(state, getInitialState());
+          view.runner.removeAttribute('class');
         }
     }
   });
@@ -249,12 +235,26 @@ function updateEntity(game, runner, entity, dt) {
   }
 }
 
+function checkBombCollision(runner, bomb) {
+  // For each dimension: abs(dim1 - dim2) <= (size1 - size2)/2
+  // But I adjusted values for an easier gameplay :)
+  return (
+    Math.abs(runner.z - bomb.z) <= 4 &&
+    Math.abs(runner.y - bomb.y) <= 30 &&
+    Math.abs(runner.x - bomb.x) <= 25
+  );
+}
+
 function draw(state) {
   const { game, runner, entities } = state;
   if (game.isOver) {
-    view.runner.style.animationPlayState = 'paused';
+    view.runner.style.animationPlayState = 'running';
+    view.runner.className = 'dead';
     return;
   }
+
+  view.score.innerText = game.score;
+  view.level.innerText = game.level;
 
   view.road.style.backgroundPositionY = `${
     game.progress / ROAD_ANGLE_SIN_COS
@@ -278,7 +278,7 @@ function drawEntity(runner, entity) {
   const element = view.entities[entity.index];
 
   if (entity.position.z < runner.position.z) {
-    element.style.zIndex = Z_INDEX_BEHIND_RUNNER;
+    element.style.zIndex = RUNNER_Z_INDEX_BEHIND;
   }
 
   const position = project(entity.position);
