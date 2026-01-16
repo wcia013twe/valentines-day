@@ -135,7 +135,11 @@ body {
   margin-left: -13px;
   line-height: 26px;
   text-align: center;
-  background: radial-gradient(circle at 30% 30%, gold 40%, goldenrod 100%);
+  background: radial-gradient(
+    circle at 30% 30%,
+    gold 40%,
+    goldenrod 100%
+  );
   border: 1px solid goldenrod;
   border-radius: 50%;
   box-sizing: border-box;
