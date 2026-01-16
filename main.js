@@ -14,11 +14,11 @@ const RUNNER_Z_INDEX_BEHIND = 100;
 
 const ENTITIES_Z_GAP = 50;
 const ENTITIES_PER_LEVEL = 30;
+const ENTITIES_PER_LEVEL_SERIES = 6;
 const ENTITIES_SPAWN_Z_LAST = 40;
 const ENTITIES_SPAWN_Z_FIRST =
   ENTITIES_SPAWN_Z_LAST + ENTITIES_PER_LEVEL * ENTITIES_Z_GAP;
 const ENTITIES_Y_FLOATING = -75;
-const ENTITIES_BEFORE_DIRECTION_CHANGE = 6;
 const ENTITIES_BOMB_CHANCE = 0.3;
 const ENTITIES_DEATH_TIME = 0.2;
 
@@ -123,7 +123,7 @@ function spawnLevelEntities(state) {
   state.game.levelProgress = 0;
 
   for (let i = 0; i < ENTITIES_PER_LEVEL; i++) {
-    if (i % ENTITIES_BEFORE_DIRECTION_CHANGE === 0) {
+    if (i % ENTITIES_PER_LEVEL_SERIES === 0) {
       changeSpawnPosition(spawnPosition);
     }
 
