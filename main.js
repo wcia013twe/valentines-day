@@ -96,24 +96,18 @@ function getLaneX(lane) {
 }
 
 function getAdjacentLanes(lane) {
-  return [lane - 1, lane + 1].filter(
-    (x) => x >= 0 && x < LANES
-  );
+  return [lane - 1, lane + 1].filter((x) => x >= 0 && x < LANES);
 }
 
 function distance(a, b) {
-  return Math.sqrt(
-    (a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2
-  );
+  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2);
 }
 
 function changeSpawnPosition(position) {
   const lanes = getAdjacentLanes(position.lane);
 
   // Equally possible options: new Y / Lane 1 / Lane 2
-  const newDirection = Math.floor(
-    Math.random() * (lanes.length + 1)
-  );
+  const newDirection = Math.floor(Math.random() * (lanes.length + 1));
   if (newDirection === 0) {
     position.y = position.y === 0 ? ENTITIES_Y_FLOATING : 0;
   } else {
@@ -133,8 +127,7 @@ function spawnLevelEntities(state) {
       changeSpawnPosition(spawnPosition);
     }
 
-    const type =
-      Math.random() > ENTITIES_BOMB_CHANCE ? 'coin' : 'bomb';
+    const type = Math.random() > ENTITIES_BOMB_CHANCE ? 'coin' : 'bomb';
 
     const { lane, y, z } = spawnPosition;
     const position = { x: getLaneX(lane), y, z };
@@ -208,15 +201,9 @@ function updateRunner(runner, dt) {
   const destinationX = getLaneX(runner.lane);
 
   if (position.x < destinationX) {
-    position.x = Math.min(
-      position.x + RUNNER_SPEED_X * dt,
-      destinationX
-    );
+    position.x = Math.min(position.x + RUNNER_SPEED_X * dt, destinationX);
   } else if (position.x > destinationX) {
-    position.x = Math.max(
-      position.x - RUNNER_SPEED_X * dt,
-      destinationX
-    );
+    position.x = Math.max(position.x - RUNNER_SPEED_X * dt, destinationX);
   }
 
   if (position.y < 0) {
@@ -245,9 +232,7 @@ function updateEntity(game, runner, entity, dt) {
       break;
 
     case 'bomb':
-      if (
-        checkBombCollision(runner.position, entity.position)
-      ) {
+      if (checkBombCollision(runner.position, entity.position)) {
         game.isOver = true;
       }
       break;
@@ -317,9 +302,7 @@ function drawDeadEntity(entity) {
   const scale = 1 + entity.deathTimer * 3;
   const projectedPosition = project(position, scale);
   const transform = getTransform(projectedPosition);
-  const rotation = `rotateY(${Math.floor(
-    entity.deathTimer * 1000
-  )}deg`;
+  const rotation = `rotateY(${Math.floor(entity.deathTimer * 1000)}deg`;
 
   const element = view.entities[entity.index];
   element.style.opacity = opacity;
