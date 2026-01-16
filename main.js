@@ -241,7 +241,7 @@ function updateEntity(game, runner, entity, dt) {
 
 function checkBombCollision(runner, bomb) {
   // Collision between 2 rectangular cuboids:
-  // For each dimension: abs(dim1-dim2) <= (size1-size2)/2
+  // For each dimension: abs(dim1-dim2) <= (size1+size2)/2
   // But I adjusted values for an easier gameplay :)
   return (
     Math.abs(runner.z - bomb.z) <= 4 &&
