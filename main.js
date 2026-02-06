@@ -1,7 +1,8 @@
 const LANES = 3;
 const LANE_WIDTH = 47;
+const GATE_HORIZONTAL_SPACING = 20; // Additional horizontal offset for gates (positive = wider spacing)
 const GRAVITY = 2000;
-const INIT_GAME_SPEED = 150;
+const INIT_GAME_SPEED = 300;
 const GAME_ACCELERATION = 0;
 
 const RUNNER_JUMP_SPEED = -600;
@@ -26,13 +27,32 @@ const ENTITIES_DEATH_TIME = 0.2;
 
 const LEVEL_LENGTH = ENTITIES_SPAWN_Z_FIRST + 550;
 
+// Audio constants
+const BACKGROUND_MUSIC_PATH = 'background-music.wav'; // TODO: Add path to background music file (e.g., './audio/background-music.mp3')
+const COIN_COLLECT_SOUND_PATH = 'coin.ogg'; // TODO: Add path to coin collection sound file (e.g., './audio/coin-collect.mp3')
+const LEVEL_COMPLETE_SOUND_PATH = 'level-complete.wav'; // Path to level complete sound file
+const HURT_SOUND_PATH = 'hurt.wav'; // Path to hurt/damage sound file
+const BACKGROUND_MUSIC_VOLUME = 0.3; // Background music volume (0.0 to 1.0)
+const COIN_SOUND_VOLUME = 0.5; // Coin sound effect volume (0.0 to 1.0)
+const LEVEL_COMPLETE_SOUND_VOLUME = 0.7; // Level complete sound volume (0.0 to 1.0)
+const HURT_SOUND_VOLUME = 0.6; // Hurt sound effect volume (0.0 to 1.0)
+
 // Gate system constants
-const GATE_Z_POSITIONS = [-300, -200, -100];
+// Gates spread across levels 1, 2, and 3
+// Positioned at the middle of each level for even distribution
+// LEVEL_LENGTH = 2090, so gates are roughly 2090 units apart
+const GATE_Z_POSITIONS = [
+  LEVEL_LENGTH * 0.5,  // Gate 1: Middle of Level 1 (~1045)
+  LEVEL_LENGTH * 1.5,  // Gate 2: Middle of Level 2 (~3135)
+  LEVEL_LENGTH * 2.5   // Gate 3: Middle of Level 3 (~5225)
+];
 const GATE_WIDTH = 200;
 const GATE_HEIGHT = 150;
 
-// Finish line constant - positioned after the last gate
-const FINISH_LINE_Z = -450;
+// Finish line constant - positioned to be reached at the end of level 3
+// Finish line only starts moving when level 3 begins
+// Should be positioned roughly one level length ahead of runner
+const FINISH_LINE_Z = LEVEL_LENGTH; // Will take one full level duration to reach
 
 // Gate definitions for date choices
 const GATE_DEFINITIONS = [
@@ -65,6 +85,112 @@ const ROAD_ANGLE_SIN = Math.sin(ROAD_ANGLE);
 const ROAD_ANGLE_COS = Math.cos(ROAD_ANGLE);
 const ROAD_ANGLE_SIN_COS = ROAD_ANGLE_SIN * ROAD_ANGLE_COS;
 const PERSPECTIVE = 600;
+
+// Audio Manager Class
+class AudioManager {
+  constructor() {
+    this.backgroundMusic = null;
+    this.coinSound = null;
+    this.levelCompleteSound = null;
+    this.hurtSound = null;
+    this.initialized = false;
+  }
+
+  initialize() {
+    if (this.initialized) return;
+
+    // Initialize background music
+    if (BACKGROUND_MUSIC_PATH) {
+      this.backgroundMusic = new Audio(BACKGROUND_MUSIC_PATH);
+      this.backgroundMusic.volume = BACKGROUND_MUSIC_VOLUME;
+      this.backgroundMusic.loop = true; // Loop the background music
+    }
+
+    // Initialize coin collection sound
+    if (COIN_COLLECT_SOUND_PATH) {
+      this.coinSound = new Audio(COIN_COLLECT_SOUND_PATH);
+      this.coinSound.volume = COIN_SOUND_VOLUME;
+    }
+
+    // Initialize level complete sound
+    if (LEVEL_COMPLETE_SOUND_PATH) {
+      this.levelCompleteSound = new Audio(LEVEL_COMPLETE_SOUND_PATH);
+      this.levelCompleteSound.volume = LEVEL_COMPLETE_SOUND_VOLUME;
+    }
+
+    // Initialize hurt sound
+    if (HURT_SOUND_PATH) {
+      this.hurtSound = new Audio(HURT_SOUND_PATH);
+      this.hurtSound.volume = HURT_SOUND_VOLUME;
+    }
+
+    this.initialized = true;
+  }
+
+  playBackgroundMusic() {
+    if (this.backgroundMusic && BACKGROUND_MUSIC_PATH) {
+      this.backgroundMusic.play().catch(error => {
+        console.log('Background music playback failed:', error);
+      });
+    }
+  }
+
+  pauseBackgroundMusic() {
+    if (this.backgroundMusic) {
+      this.backgroundMusic.pause();
+    }
+  }
+
+  stopBackgroundMusic() {
+    if (this.backgroundMusic) {
+      this.backgroundMusic.pause();
+      this.backgroundMusic.currentTime = 0;
+    }
+  }
+
+  playCoinSound() {
+    if (this.coinSound && COIN_COLLECT_SOUND_PATH) {
+      // Clone the audio to allow multiple simultaneous plays
+      const sound = this.coinSound.cloneNode();
+      sound.volume = COIN_SOUND_VOLUME;
+      sound.play().catch(error => {
+        console.log('Coin sound playback failed:', error);
+      });
+    }
+  }
+
+  playLevelCompleteSound() {
+    if (this.levelCompleteSound && LEVEL_COMPLETE_SOUND_PATH) {
+      this.levelCompleteSound.currentTime = 0; // Reset to start
+      this.levelCompleteSound.play().catch(error => {
+        console.log('Level complete sound playback failed:', error);
+      });
+    }
+  }
+
+  playHurtSound() {
+    if (this.hurtSound && HURT_SOUND_PATH) {
+      // Clone the audio to allow multiple simultaneous plays
+      const sound = this.hurtSound.cloneNode();
+      sound.volume = HURT_SOUND_VOLUME;
+      sound.play().catch(error => {
+        console.log('Hurt sound playback failed:', error);
+      });
+    }
+  }
+
+  setBackgroundVolume(volume) {
+    if (this.backgroundMusic) {
+      this.backgroundMusic.volume = Math.max(0, Math.min(1, volume));
+    }
+  }
+
+  setCoinVolume(volume) {
+    if (this.coinSound) {
+      this.coinSound.volume = Math.max(0, Math.min(1, volume));
+    }
+  }
+}
 
 // Gate Choice Manager Class
 class GateChoiceManager {
@@ -195,6 +321,8 @@ const view = {
   scene: document.getElementById('scene'),
   road: document.getElementById('road'),
   runner: document.getElementById('runner'),
+  startScreen: document.getElementById('start-screen'),
+  startButton: document.getElementById('start-button'),
   entities: Array.from({ length: ENTITIES_PER_LEVEL }, () => {
     const element = document.createElement('div');
     element.style.opacity = 0;
@@ -203,51 +331,41 @@ const view = {
     return element;
   }),
   gates: GATE_DEFINITIONS.map((gateDef) => {
-    // Left gate structure (two sticks + banner with text)
-    const leftStickLeft = document.createElement('div');
-    leftStickLeft.className = 'gate-stick';
-    leftStickLeft.style.opacity = 0;
-    document.getElementById('scene').append(leftStickLeft);
-
-    const leftStickRight = document.createElement('div');
-    leftStickRight.className = 'gate-stick';
-    leftStickRight.style.opacity = 0;
-    document.getElementById('scene').append(leftStickRight);
-
-    const leftBanner = document.createElement('div');
-    leftBanner.className = 'gate-banner';
-    leftBanner.style.opacity = 0;
-    leftBanner.innerHTML = `
-      <div class="banner-text">${gateDef.leftOption.emoji} ${gateDef.leftOption.text}</div>
+    // Create a container for the left gate (sticks + banner as one unit)
+    const leftGateContainer = document.createElement('div');
+    leftGateContainer.className = 'gate-container gate-container-left';
+    leftGateContainer.style.opacity = 0;
+    leftGateContainer.style.position = 'absolute';
+    leftGateContainer.style.left = '50%';
+    leftGateContainer.style.top = '0';
+    leftGateContainer.innerHTML = `
+      <div class="gate-stick" style="position: absolute; left: -23.5px; top: 0;"></div>
+      <div class="gate-stick" style="position: absolute; left: 23.5px; top: 0;"></div>
+      <div class="gate-banner" style="position: absolute; left: 0; top: -100px; transform: translateX(-50%);">
+        <div class="banner-text">${gateDef.leftOption.emoji} ${gateDef.leftOption.text}</div>
+      </div>
     `;
-    document.getElementById('scene').append(leftBanner);
+    document.getElementById('scene').append(leftGateContainer);
 
-    // Right gate structure (two sticks + banner with text)
-    const rightStickLeft = document.createElement('div');
-    rightStickLeft.className = 'gate-stick';
-    rightStickLeft.style.opacity = 0;
-    document.getElementById('scene').append(rightStickLeft);
-
-    const rightStickRight = document.createElement('div');
-    rightStickRight.className = 'gate-stick';
-    rightStickRight.style.opacity = 0;
-    document.getElementById('scene').append(rightStickRight);
-
-    const rightBanner = document.createElement('div');
-    rightBanner.className = 'gate-banner';
-    rightBanner.style.opacity = 0;
-    rightBanner.innerHTML = `
-      <div class="banner-text">${gateDef.rightOption.emoji} ${gateDef.rightOption.text}</div>
+    // Create a container for the right gate (sticks + banner as one unit)
+    const rightGateContainer = document.createElement('div');
+    rightGateContainer.className = 'gate-container gate-container-right';
+    rightGateContainer.style.opacity = 0;
+    rightGateContainer.style.position = 'absolute';
+    rightGateContainer.style.left = '50%';
+    rightGateContainer.style.top = '0';
+    rightGateContainer.innerHTML = `
+      <div class="gate-stick gate-stick-right" style="position: absolute; left: -23.5px; top: 0;"></div>
+      <div class="gate-stick gate-stick-right" style="position: absolute; left: 23.5px; top: 0;"></div>
+      <div class="gate-banner" style="position: absolute; left: 0; top: -100px; transform: translateX(-50%);">
+        <div class="banner-text">${gateDef.rightOption.emoji} ${gateDef.rightOption.text}</div>
+      </div>
     `;
-    document.getElementById('scene').append(rightBanner);
+    document.getElementById('scene').append(rightGateContainer);
 
     return {
-      leftStickLeft,
-      leftStickRight,
-      leftBanner,
-      rightStickLeft,
-      rightStickRight,
-      rightBanner,
+      leftGateContainer,
+      rightGateContainer,
       def: gateDef
     };
   }),
@@ -265,7 +383,8 @@ function getInitialState() {
   const state = {
     game: {
       isOver: false,
-      level: 0,
+      hasStarted: false, // Track if game has been started via start screen
+      level: 0, // Start at 0, will become 1 when spawnLevelEntities is called
       levelProgress: 0,
       score: 0,
       speed: INIT_GAME_SPEED,
@@ -284,6 +403,7 @@ function getInitialState() {
     },
     entities: new Array(ENTITIES_PER_LEVEL),
     gateManager: new GateChoiceManager(GATE_DEFINITIONS),
+    audioManager: new AudioManager(),
     gates: GATE_DEFINITIONS.map(def => ({
       zPosition: def.zPosition,
       def: def
@@ -291,17 +411,13 @@ function getInitialState() {
     finishLineZ: FINISH_LINE_Z,
   };
 
-  spawnLevelEntities(state);
+  // Don't spawn entities yet - wait for start screen
+  // spawnLevelEntities(state);
 
   // Initialize gates with visibility
-  view.gates.forEach((gate, index) => {
-    gate.leftStickLeft.style.opacity = 1;
-    gate.leftStickRight.style.opacity = 1;
-    gate.leftBanner.style.opacity = 1;
-    gate.rightStickLeft.style.opacity = 1;
-    gate.rightStickRight.style.opacity = 1;
-    gate.rightBanner.style.opacity = 1;
-    console.log(`Gate ${index + 1} initialized at z=${gate.def.zPosition}, runner at z=${state.runner.position.z}`);
+  view.gates.forEach((gate) => {
+    gate.leftGateContainer.style.opacity = 0; // Hide initially
+    gate.rightGateContainer.style.opacity = 0; // Hide initially
   });
 
   return state;
@@ -361,6 +477,8 @@ function spawnLevelEntities(state) {
   state.game.level++;
   state.game.levelProgress = 0;
 
+  console.log('Spawning level', state.game.level, 'entities. Total entities:', ENTITIES_PER_LEVEL);
+
   for (let i = 0; i < ENTITIES_PER_LEVEL; i++) {
     if (i % ENTITIES_PER_LEVEL_SERIES === 0) {
       changeSpawnPosition(spawnPosition);
@@ -383,11 +501,12 @@ function spawnLevelEntities(state) {
 
     spawnPosition.z -= ENTITIES_Z_GAP;
   }
+  console.log('Spawned', ENTITIES_PER_LEVEL, 'entities. First entity at z:', state.entities[0].position.z);
 }
 
 function handleGameEvents(state) {
   document.addEventListener('keydown', (event) => {
-    const { runner } = state;
+    const { runner, audioManager } = state;
 
     switch (event.key) {
       case 'ArrowLeft':
@@ -406,20 +525,36 @@ function handleGameEvents(state) {
 
       case ' ':
         if (state.game.isOver) {
-          Object.assign(state, getInitialState());
+          const newState = getInitialState();
+          // Preserve audio manager
+          newState.audioManager = audioManager;
+          Object.assign(state, newState);
           view.runner.removeAttribute('class');
+          audioManager.playBackgroundMusic();
         }
     }
   });
 }
 
 function update(state, dt) {
-  const { game, runner, entities, gateManager } = state;
-  if (game.isOver || game.isComplete) {
+  const { game, runner, entities, gateManager, audioManager } = state;
+
+  // Debug: Always log first few frames
+  if (state._updateCount === undefined) {
+    state._updateCount = 0;
+  }
+  state._updateCount++;
+
+  if (state._updateCount <= 5) {
+    console.log('Update #' + state._updateCount, '- isOver:', game.isOver, 'isComplete:', game.isComplete, 'hasStarted:', game.hasStarted);
+  }
+
+  if (game.isOver || game.isComplete || !game.hasStarted) {
     return;
   }
 
-  if (game.levelProgress >= LEVEL_LENGTH) {
+  // Cap at 3 levels max
+  if (game.levelProgress >= LEVEL_LENGTH && game.level < 3) {
     spawnLevelEntities(state);
   }
 
@@ -428,10 +563,15 @@ function update(state, dt) {
   game.progress += speed;
   game.speed += GAME_ACCELERATION * dt;
 
+  // Debug: Log first update
+  if (game.progress < 10) {
+    console.log('Update running! Speed:', speed, 'Progress:', game.progress, 'dt:', dt);
+  }
+
   updateRunner(runner, dt);
 
   for (const entity of entities) {
-    updateEntity(game, runner, entity, dt);
+    updateEntity(game, runner, entity, dt, audioManager);
   }
 
   // Update gate positions (move them backward like entities)
@@ -439,8 +579,11 @@ function update(state, dt) {
     gate.zPosition -= speed;
   }
 
-  // Update finish line position
-  // state.finishLineZ -= speed;
+  // Update finish line position (move it backward like entities)
+  // Only move the finish line in level 3, so it appears at the right time
+  if (game.level >= 3) {
+    state.finishLineZ -= speed;
+  }
 
   // Check for gate crossings
   const crossedGate = gateManager.checkGateCrossing(runner.position.z);
@@ -449,10 +592,23 @@ function update(state, dt) {
   }
 
   // Check if we've reached level 3 and crossed the finish line
-  // if (game.level >= 3 && runner.position.z <= state.finishLineZ && !game.isComplete) {
-  //   game.isComplete = true;
-  //   completeGame(state);
-  // }
+  // Finish line moves toward runner (Z decreases). Runner is at fixed Z=-410.
+  // Stop the Koopa 50 units past the finish line, not on it
+  const STOP_DISTANCE_PAST_FINISH = 50;
+  if (game.level >= 3 && state.finishLineZ <= (runner.position.z - STOP_DISTANCE_PAST_FINISH) && !game.isComplete) {
+    game.isComplete = true;
+    completeGame(state);
+  }
+
+  // Slow down the game as we approach the finish line in level 3
+  if (game.level >= 3) {
+    const distanceToFinish = state.finishLineZ - runner.position.z;
+    if (distanceToFinish < 150 && distanceToFinish > -STOP_DISTANCE_PAST_FINISH) {
+      // Gradually reduce speed as finish line gets closer
+      const slowdownFactor = Math.max(0.1, (distanceToFinish + STOP_DISTANCE_PAST_FINISH) / 150);
+      game.speed = INIT_GAME_SPEED * slowdownFactor;
+    }
+  }
 }
 
 function updateRunner(runner, dt) {
@@ -475,7 +631,7 @@ function updateRunner(runner, dt) {
   }
 }
 
-function updateEntity(game, runner, entity, dt) {
+function updateEntity(game, runner, entity, dt, audioManager) {
   if (entity.deathTimer > 0) {
     entity.deathTimer += dt;
     return;
@@ -491,6 +647,8 @@ function updateEntity(game, runner, entity, dt) {
       ) {
         game.score++;
         entity.deathTimer = dt;
+        // Play coin collection sound
+        audioManager.playCoinSound();
       }
       break;
 
@@ -498,6 +656,8 @@ function updateEntity(game, runner, entity, dt) {
       if (runner.damageTimer <= 0 && checkBombCollision(runner.position, entity.position)) {
         runner.damageTimer = RUNNER_DAMAGE_COOLDOWN;
         entity.deathTimer = dt;
+        // Play hurt sound
+        audioManager.playHurtSound();
       }
       break;
   }
@@ -522,12 +682,22 @@ function draw(state) {
     return;
   }
 
+  // Stop road animation and runner when game is complete
+  if (game.isComplete) {
+    view.runner.style.animationPlayState = 'paused';
+    return;
+  }
+
   view.score.innerText = game.score;
   view.level.innerText = game.level;
 
-  view.road.style.backgroundPositionY = `${
-    game.progress / ROAD_ANGLE_SIN_COS
-  }px`;
+  const roadPosition = game.progress / ROAD_ANGLE_SIN_COS;
+  view.road.style.backgroundPositionY = `${roadPosition}px`;
+
+  // Debug: Log road position updates
+  if (game.progress > 0 && game.progress < 10) {
+    console.log('Draw - Road position:', roadPosition, 'Progress:', game.progress);
+  }
 
   const runnerPosition = project(runner.position, RUNNER_SCALE);
   view.runner.style.transform = getTransform(runnerPosition);
@@ -552,56 +722,29 @@ function draw(state) {
   });
 
   // Draw finish line (only visible in level 3)
-  // if (game.level >= 3) {
-  //   drawFinishLine(state.finishLineZ, runner);
-  // }
+  if (game.level >= 3) {
+    drawFinishLine(state.finishLineZ, runner);
+  }
 }
 
 function drawGate(gateView, gateState, runner) {
   const gateDef = gateState.def;
   const zPosition = gateState.zPosition; // Use dynamic z position from state
   const zIndex = zPosition < runner.position.z ? RUNNER_Z_INDEX_BEHIND : 0;
-  const bannerHeight = -80; // Height above ground
 
-  // Left gate structure (lane 0)
-  const leftLaneX = getLaneX(gateDef.leftOption.lane);
+  // Left gate container - position it at the center of the left lane
+  // Apply additional spacing offset (negative for left gate)
+  const leftLaneX = getLaneX(gateDef.leftOption.lane) - GATE_HORIZONTAL_SPACING;
+  const leftGatePos = project({ x: leftLaneX, y: 0, z: zPosition });
+  gateView.leftGateContainer.style.transform = getTransform(leftGatePos);
+  gateView.leftGateContainer.style.zIndex = zIndex;
 
-  // Two sticks at lane dividers flanking the left lane
-  const leftStickLeftX = getLaneDividerX(gateDef.leftOption.lane);
-  const leftStickRightX = getLaneDividerX(gateDef.leftOption.lane + 1);
-
-  const leftStickLeftPos = project({ x: leftStickLeftX, y: 0, z: zPosition });
-  gateView.leftStickLeft.style.transform = getTransform(leftStickLeftPos);
-  gateView.leftStickLeft.style.zIndex = zIndex;
-
-  const leftStickRightPos = project({ x: leftStickRightX, y: 0, z: zPosition });
-  gateView.leftStickRight.style.transform = getTransform(leftStickRightPos);
-  gateView.leftStickRight.style.zIndex = zIndex;
-
-  // Left banner (centered in lane, elevated above the sticks)
-  const leftBannerPos = project({ x: leftLaneX, y: bannerHeight, z: zPosition });
-  gateView.leftBanner.style.transform = getTransform(leftBannerPos);
-  gateView.leftBanner.style.zIndex = zIndex;
-
-  // Right gate structure (lane 2)
-  const rightLaneX = getLaneX(gateDef.rightOption.lane);
-
-  // Two sticks at lane dividers flanking the right lane
-  const rightStickLeftX = getLaneDividerX(gateDef.rightOption.lane);
-  const rightStickRightX = getLaneDividerX(gateDef.rightOption.lane + 1);
-
-  const rightStickLeftPos = project({ x: rightStickLeftX, y: 0, z: zPosition });
-  gateView.rightStickLeft.style.transform = getTransform(rightStickLeftPos);
-  gateView.rightStickLeft.style.zIndex = zIndex;
-
-  const rightStickRightPos = project({ x: rightStickRightX, y: 0, z: zPosition });
-  gateView.rightStickRight.style.transform = getTransform(rightStickRightPos);
-  gateView.rightStickRight.style.zIndex = zIndex;
-
-  // Right banner (centered in lane, elevated above the sticks)
-  const rightBannerPos = project({ x: rightLaneX, y: bannerHeight, z: zPosition });
-  gateView.rightBanner.style.transform = getTransform(rightBannerPos);
-  gateView.rightBanner.style.zIndex = zIndex;
+  // Right gate container - position it at the center of the right lane
+  // Apply additional spacing offset (positive for right gate)
+  const rightLaneX = getLaneX(gateDef.rightOption.lane) + GATE_HORIZONTAL_SPACING;
+  const rightGatePos = project({ x: rightLaneX, y: 0, z: zPosition });
+  gateView.rightGateContainer.style.transform = getTransform(rightGatePos);
+  gateView.rightGateContainer.style.zIndex = zIndex;
 }
 
 function drawFinishLine(finishLineZ, runner) {
@@ -649,7 +792,13 @@ function drawDeadEntity(entity) {
 }
 
 function completeGame(state) {
-  const { gateManager } = state;
+  const { gateManager, audioManager } = state;
+
+  // Pause background music when game completes
+  audioManager.pauseBackgroundMusic();
+
+  // Play level complete sound
+  audioManager.playLevelCompleteSound();
 
   // Finalize the session data
   gateManager.finalizeSession();
@@ -668,70 +817,280 @@ function showResultsScreen(state) {
   const resultsScreen = document.createElement('div');
   resultsScreen.className = 'results-screen';
 
-  const resultsContent = document.createElement('div');
-  resultsContent.className = 'results-content';
+  // Create envelope container
+  const envelopeContainer = document.createElement('div');
+  envelopeContainer.className = 'envelope-container';
 
-  const title = document.createElement('h2');
-  title.textContent = '💖 Your Perfect Date Plan! 💖';
+  const envelope = document.createElement('div');
+  envelope.className = 'envelope';
 
-  const choicesContainer = document.createElement('div');
-  choicesContainer.className = 'results-choices';
+  const envelopeFlap = document.createElement('div');
+  envelopeFlap.className = 'envelope-flap';
 
-  // Display each choice
-  state.gateManager.sessionData.choices.forEach((choice) => {
-    const resultItem = document.createElement('div');
-    resultItem.className = 'result-item';
+  const envelopeBody = document.createElement('div');
+  envelopeBody.className = 'envelope-body';
 
-    const question = document.createElement('div');
-    question.className = 'result-question';
-    question.textContent = choice.question;
+  const envelopeHeart = document.createElement('div');
+  envelopeHeart.className = 'envelope-heart';
+  envelopeHeart.textContent = '❤️';
 
-    const selectedChoice = document.createElement('div');
-    selectedChoice.className = 'result-choice';
-    selectedChoice.textContent = `${choice.selectedEmoji} ${choice.selectedText}`;
+  const envelopeShadow = document.createElement('div');
+  envelopeShadow.className = 'envelope-shadow';
 
-    resultItem.appendChild(question);
-    resultItem.appendChild(selectedChoice);
-    choicesContainer.appendChild(resultItem);
-  });
+  envelope.appendChild(envelopeFlap);
+  envelope.appendChild(envelopeBody);
+  envelope.appendChild(envelopeHeart);
+  envelopeContainer.appendChild(envelope);
+  envelopeContainer.appendChild(envelopeShadow);
 
-  const restartButton = document.createElement('button');
-  restartButton.className = 'restart-button';
-  restartButton.textContent = 'Plan Another Date! 💕';
-  restartButton.onclick = () => {
-    resultsScreen.remove();
-    view.resultsScreen = null;
-    Object.assign(state, getInitialState());
-    view.runner.removeAttribute('class');
-    view.finishLine.style.opacity = 0; // Hide finish line for restart
+  // Create letter container
+  const letterContainer = document.createElement('div');
+  letterContainer.className = 'letter-container';
+
+  const letterPaper = document.createElement('div');
+  letterPaper.className = 'letter-paper';
+
+  // Get the choices from the game
+  const choices = state.gateManager.sessionData.choices;
+  const choice1 = choices[0] ? choices[0].selectedText : 'Coffee Shop';
+  const choice2 = choices[1] ? choices[1].selectedText : 'Dinner';
+  const choice3 = choices[2] ? choices[2].selectedText : 'Walk in Park';
+
+  // Create the romantic letter content
+  letterPaper.innerHTML = `
+    <div class="letter-header">My Dearest Valentine,</div>
+    <div class="letter-text">From the moment I saw you, I knew you were someone extraordinary. Your smile lights up my world like the morning sun breaking through the clouds.</div>
+    <div class="letter-text">I've been dreaming of a perfect day with you, and I've planned something special...</div>
+    <div class="letter-text" style="margin-top: 20px;">Our date would begin at <span style="color: #ff1493;">${choice1}</span>, where we could get to know each other better, sharing stories and laughter.</div>
+    <div class="letter-text">As the day unfolds, we'd enjoy <span style="color: #ff1493;">${choice2}</span>, creating memories that will last a lifetime.</div>
+    <div class="letter-text">Finally, as the stars begin to twinkle above us, we'd end our perfect evening with <span style="color: #ff1493;">${choice3}</span>, savoring every moment together.</div>
+    <div class="letter-text" style="margin-top: 20px; font-weight: bold;">So here's my question, the one I've been waiting to ask:</div>
+    <div class="letter-text" style="text-align: center; font-size: 20px; color: #8b0000; margin: 20px 0;">Will you be my Valentine? ❤️</div>
+    <div class="response-section">
+      <div class="response-label">Your answer:</div>
+      <div class="response-options">
+        <label class="response-option">
+          <input type="checkbox" name="valentine-response" value="yes" onchange="handleValentineResponse(this, 'yes')">
+          <span>Yes! 💕</span>
+        </label>
+        <label class="response-option">
+          <input type="checkbox" name="valentine-response" value="no" onchange="handleValentineResponse(this, 'no')">
+          <span>No 💔</span>
+        </label>
+      </div>
+    </div>
+    <div class="letter-signature">Forever Yours</div>
+  `;
+
+  letterContainer.appendChild(letterPaper);
+
+  // Add click handler to envelope
+  envelopeContainer.onclick = () => {
+    envelope.classList.add('opening');
+    setTimeout(() => {
+      envelopeContainer.style.display = 'none';
+      letterContainer.classList.add('visible');
+      revealLetterLineByLine(letterPaper);
+    }, 600);
   };
 
-  resultsContent.appendChild(title);
-  resultsContent.appendChild(choicesContainer);
-  resultsContent.appendChild(restartButton);
-  resultsScreen.appendChild(resultsContent);
-
+  resultsScreen.appendChild(envelopeContainer);
+  resultsScreen.appendChild(letterContainer);
   document.querySelector('.game').appendChild(resultsScreen);
   view.resultsScreen = resultsScreen;
+}
+
+// Function to reveal letter text line by line
+function revealLetterLineByLine(letterPaper) {
+  const elements = letterPaper.querySelectorAll('.letter-text, .letter-signature, .response-section');
+  let delay = 0;
+
+  elements.forEach((element, index) => {
+    setTimeout(() => {
+      element.classList.add('visible');
+    }, delay);
+    delay += 800; // 800ms between each line
+  });
+}
+
+// Global function to handle Valentine response
+window.handleValentineResponse = function(checkbox, value) {
+  // Uncheck all other checkboxes
+  const checkboxes = document.querySelectorAll('input[name="valentine-response"]');
+  checkboxes.forEach(cb => {
+    if (cb !== checkbox) cb.checked = false;
+  });
+
+  if (checkbox.checked) {
+    // Get the date plan data
+    const sessionData = JSON.parse(localStorage.getItem('datePlanResult') || '{}');
+    const choices = sessionData.choices || [];
+
+    // Create email body with the response
+    const dateDetails = choices.map(c => `${c.question} ${c.selectedEmoji} ${c.selectedText}`).join('\n');
+    const emailSubject = value === 'yes' ? '💕 YES! Valentine\'s Day Response' : 'Valentine\'s Day Response';
+    const emailBody = `Valentine's Day Game Response
+
+Answer: ${value === 'yes' ? 'YES! 💕' : 'No 💔'}
+
+Date Plan Chosen:
+${dateDetails}
+
+Session ID: ${sessionData.sessionId || 'N/A'}
+Timestamp: ${new Date().toISOString()}
+`;
+
+    // Send the data (using mailto: link)
+    const mailto = `mailto:YOUR_EMAIL@example.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+
+    // Show response message
+    setTimeout(() => {
+      const responseSection = checkbox.closest('.response-section');
+      let message = document.querySelector('.response-message');
+
+      if (!message) {
+        message = document.createElement('div');
+        message.className = 'response-message letter-text visible';
+        message.style.textAlign = 'center';
+        message.style.fontSize = '20px';
+        message.style.marginTop = '20px';
+        message.style.color = value === 'yes' ? '#ff1493' : '#8b0000';
+        responseSection.appendChild(message);
+      }
+
+      if (value === 'yes') {
+        message.innerHTML = `
+          💖 You've made me the happiest person in the world! 💖
+          <br><br>
+          <a href="${mailto}" class="restart-button" style="display: inline-block; text-decoration: none; margin: 10px;">
+            📧 Send Response
+          </a>
+          <br>
+          <button class="restart-button" onclick="location.reload()">Start Over</button>
+        `;
+      } else {
+        message.innerHTML = `
+          💔 I understand... Perhaps another time? 💔
+          <br><br>
+          <a href="${mailto}" class="restart-button" style="display: inline-block; text-decoration: none; margin: 10px;">
+            📧 Send Response
+          </a>
+          <br>
+          <button class="restart-button" onclick="location.reload()">Try Again</button>
+        `;
+      }
+
+      // Also log to console for debugging
+      console.log('Valentine Response Data:', {
+        answer: value,
+        choices: choices,
+        sessionData: sessionData
+      });
+    }, 300);
+  }
+};
+
+function startGame(state) {
+  console.log('=== START GAME CALLED ===');
+  console.log('Current state before start:', {
+    hasStarted: state.game.hasStarted,
+    level: state.game.level,
+    speed: state.game.speed,
+    progress: state.game.progress
+  });
+
+  state.game.hasStarted = true;
+
+  // Hide start screen
+  console.log('Hiding start screen...');
+  if (view.startScreen) {
+    view.startScreen.classList.add('hidden');
+    console.log('Start screen hidden');
+  } else {
+    console.error('Start screen element not found!');
+  }
+
+  // Initialize and start background music
+  if (!state.audioManager.initialized) {
+    state.audioManager.initialize();
+  }
+  state.audioManager.playBackgroundMusic();
+
+  // Spawn level entities
+  console.log('Spawning level entities...');
+  spawnLevelEntities(state);
+
+  // Show gates
+  view.gates.forEach((gate) => {
+    gate.leftGateContainer.style.opacity = 1;
+    gate.rightGateContainer.style.opacity = 1;
+  });
+
+  console.log('Game state after start:', {
+    hasStarted: state.game.hasStarted,
+    level: state.game.level,
+    speed: state.game.speed,
+    progress: state.game.progress,
+    entitiesCount: state.entities.filter(e => e).length
+  });
+  console.log('=== GAME STARTED SUCCESSFULLY ===');
 }
 
 function init() {
   const state = getInitialState();
   handleGameEvents(state);
 
+  // Set up start button click handler
+  console.log('Initializing game...');
+  console.log('Start button element:', view.startButton);
+  console.log('Start screen element:', view.startScreen);
+
+  if (!view.startButton) {
+    console.error('Start button not found! Retrying...');
+    view.startButton = document.getElementById('start-button');
+    view.startScreen = document.getElementById('start-screen');
+  }
+
+  if (view.startButton) {
+    view.startButton.addEventListener('click', () => {
+      console.log('Start button clicked!');
+      startGame(state);
+    });
+  } else {
+    console.error('Could not find start button element!');
+  }
+
   let lastFrameTime = performance.now();
+  let frameCount = 0;
 
   function loop(time) {
+    frameCount++;
+
+    // Debug: Log first 10 frames always, then every 60 frames
+    if (frameCount <= 10 || frameCount % 60 === 0) {
+      console.log('🔄 Loop frame #' + frameCount, 'hasStarted:', state.game.hasStarted);
+    }
+
     const dt = (time - lastFrameTime) / 1000;
     lastFrameTime = time;
 
-    update(state, dt);
-    draw(state);
+    try {
+      update(state, dt);
+      draw(state);
+    } catch (error) {
+      console.error('Error in game loop:', error);
+    }
+
+    // Debug: Log game state every 60 frames
+    if (frameCount % 60 === 0 && state.game.hasStarted) {
+      console.log('Game running - Level:', state.game.level, 'Progress:', Math.floor(state.game.progress), 'Speed:', state.game.speed);
+    }
 
     requestAnimationFrame(loop);
   }
 
   requestAnimationFrame(loop);
+  console.log('Game loop started, initial hasStarted:', state.game.hasStarted);
 }
 
 init();
