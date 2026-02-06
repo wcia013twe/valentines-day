@@ -69,20 +69,27 @@ body {
 }
 
 #runner {
-  width: 184px;
-  height: 244px;
+  width: 400px;
+  height: 450px;
   position: absolute;
   left: 50%;
   top: 0;
-  margin-left: -92px;
-  margin-top: -122px;
-  background: url('runner.png') no-repeat;
-  animation: run 0.3s steps(4) infinite;
+  margin-left: -225px;
+  margin-top: -200px;
+  /* background-position: 0 -300px; */
+  background: url('koopa.png') no-repeat;
+  background-size: 900px 600px;
+  animation: run 0.8s steps(1) infinite;
   z-index: 10;
+  clip-path: inset(0 0 150px 0);
 }
 
 #runner.dead {
   animation: death 0.8s ease-out forwards;
+}
+
+#runner.damaged {
+  filter: brightness(2) saturate(0);
 }
 
 @keyframes death {
@@ -95,12 +102,28 @@ body {
   }
 }
 
+/* @keyframes run {
+  0% {
+    background-position-y: 0;
+  }
+  50% {
+    background-position-y: -300px;
+  }
+} */
+
+/* 4-frame animation alternative - 2x2 grid layout */
 @keyframes run {
-  from {
+  0% {
     background-position: 0 0;
   }
-  to {
-    background-position: -736px 0;
+  25% {
+    background-position: 0 -300px;
+  }
+  50% {
+    background-position: -350px -300px;
+  }
+  75% {
+    background-position: -350px 0;
   }
 }
 
@@ -130,18 +153,170 @@ body {
   position: absolute;
   left: 50%;
   top: 0;
-  width: 26px;
-  height: 26px;
-  margin-left: -13px;
-  line-height: 26px;
-  text-align: center;
-  background: radial-gradient(circle at 30% 30%, gold 40%, goldenrod 100%);
-  border: 1px solid goldenrod;
-  border-radius: 50%;
-  box-sizing: border-box;
-  font-size: 14px;
+  width: 32px;
+  height: 32px;
+  margin-left: -16px;
+  background: url('coin.png') no-repeat center;
+  background-size: contain;
+  image-rendering: pixelated;
 }
 
-.coin::after {
-  content: '💰';
+/* Gate stick styles */
+.gate-stick {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 20px;
+  height: 120px;
+  margin-left: -10px;
+  background: url('stick.png') no-repeat center;
+  background-size: contain;
+  image-rendering: pixelated;
+  z-index: 10;
+}
+
+/* Gate banner styles */
+.gate-banner {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 140px;
+  height: 60px;
+  margin-left: -70px;
+  background: url('banner.png') no-repeat center;
+  background-size: contain;
+  image-rendering: pixelated;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 11;
+}
+
+/* Banner text overlay */
+.banner-text {
+  font-family: Orbitron, monospace;
+  font-size: 11px;
+  font-weight: bold;
+  color: #fff;
+  text-align: center;
+  text-shadow:
+    1px 1px 2px rgba(0, 0, 0, 0.8),
+    -1px -1px 2px rgba(0, 0, 0, 0.8),
+    1px -1px 2px rgba(0, 0, 0, 0.8),
+    -1px 1px 2px rgba(0, 0, 0, 0.8);
+  line-height: 1.2;
+  padding: 2px 4px;
+  max-width: 130px;
+  word-wrap: break-word;
+}
+
+/* Results screen styles */
+.results-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.results-content {
+  background: linear-gradient(135deg, #ff69b4, #ff1493);
+  border: 5px solid #fff;
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.results-content h2 {
+  font-family: Orbitron, monospace;
+  color: #fff;
+  margin: 0 0 30px 0;
+  font-size: 28px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.results-choices {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.result-item {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #ffe4f1;
+}
+
+.result-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.result-question {
+  font-family: Orbitron, monospace;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.result-choice {
+  font-family: Orbitron, monospace;
+  font-size: 20px;
+  color: #ff1493;
+  font-weight: bold;
+}
+
+.restart-button {
+  font-family: Orbitron, monospace;
+  background: #fff;
+  color: #ff1493;
+  border: 3px solid #fff;
+  border-radius: 25px;
+  padding: 12px 30px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.restart-button:hover {
+  background: #ff1493;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+/* Finish line styles */
+.finish-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 400px;
+  height: 100px;
+  margin-left: -200px;
+  background: url('finishline.jpg') no-repeat center;
+  background-size: cover;
+  image-rendering: pixelated;
+  z-index: 5;
+  opacity: 1;
 }
