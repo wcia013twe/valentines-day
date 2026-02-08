@@ -2,7 +2,7 @@ const LANES = 3;
 const LANE_WIDTH = 47;
 const GATE_HORIZONTAL_SPACING = 20; // Additional horizontal offset for gates (positive = wider spacing)
 const GRAVITY = 2000;
-const INIT_GAME_SPEED = 300;
+const INIT_GAME_SPEED = 150;
 const GAME_ACCELERATION = 0;
 
 const RUNNER_JUMP_SPEED = -600;
@@ -56,26 +56,26 @@ const FINISH_LINE_Z = LEVEL_LENGTH; // Will take one full level duration to reac
 
 // Gate definitions for date choices
 const GATE_DEFINITIONS = [
-  {
+ {
     id: 1,
     question: "First date activity?",
     zPosition: GATE_Z_POSITIONS[0],
-    leftOption: { text: "Coffee Shop", emoji: "☕", lane: 0 },
-    rightOption: { text: "Museum", emoji: "🎨", lane: 2 },
+    leftOption: { text: "Bowling", emoji: "🎳", lane: 0 }, // Swapped coffee for bowling
+    rightOption: { text: "Arcade", emoji: "🕹️", lane: 2 },  // Swapped art for arcade
   },
   {
     id: 2,
     question: "Evening plans?",
     zPosition: GATE_Z_POSITIONS[1],
     leftOption: { text: "Dinner", emoji: "🍝", lane: 0 },
-    rightOption: { text: "Concert", emoji: "🎵", lane: 2 },
+    rightOption: { text: "Picnic", emoji: "🧺", lane: 2 }, // Added picnic basket
   },
   {
     id: 3,
     question: "End the night?",
     zPosition: GATE_Z_POSITIONS[2],
-    leftOption: { text: "Walk in Park", emoji: "🌙", lane: 0 },
-    rightOption: { text: "Rooftop Bar", emoji: "🍸", lane: 2 },
+    leftOption: { text: "Baking", emoji: "🧁", lane: 0 }, // Added cupcake/baking
+    rightOption: { text: "Homemade Cocktails", emoji: "🍹", lane: 2 }, // Updated to a tropical vibe
   }
 ];
 
@@ -858,13 +858,13 @@ function showResultsScreen(state) {
 
   // Create the romantic letter content
   letterPaper.innerHTML = `
-    <div class="letter-header">My Dearest Valentine,</div>
-    <div class="letter-text">From the moment I saw you, I knew you were someone extraordinary. Your smile lights up my world like the morning sun breaking through the clouds.</div>
+    <div class="letter-header">My Koopy Valentine,</div>
+    <div class="letter-text">From the moment I saw you, I knew you were my player 2. </div>
     <div class="letter-text">I've been dreaming of a perfect day with you, and I've planned something special...</div>
-    <div class="letter-text" style="margin-top: 20px;">Our date would begin at <span style="color: #ff1493;">${choice1}</span>, where we could get to know each other better, sharing stories and laughter.</div>
-    <div class="letter-text">As the day unfolds, we'd enjoy <span style="color: #ff1493;">${choice2}</span>, creating memories that will last a lifetime.</div>
-    <div class="letter-text">Finally, as the stars begin to twinkle above us, we'd end our perfect evening with <span style="color: #ff1493;">${choice3}</span>, savoring every moment together.</div>
-    <div class="letter-text" style="margin-top: 20px; font-weight: bold;">So here's my question, the one I've been waiting to ask:</div>
+    <div class="letter-text" style="margin-top: 20px;">Our date would begin at <span style="color: #ff1493;">${choice1}</span>, where we could enjoy some quality koop time.</div>
+    <div class="letter-text">As the day unfolds, we'd enjoy <span style="color: #ff1493;">${choice2}</span>. What is a date without good food?</div>
+    <div class="letter-text">Finally, as the Lumas begin to twinkle above us, we'd end our perfect evening with <span style="color: #ff1493;">${choice3}</span>.</div>
+    <div class="letter-text" style="margin-top: 20px; font-weight: bold;">I can't wait to spend another valentines day with you, so here's my question, the one I've been waiting to ask:</div>
     <div class="letter-text" style="text-align: center; font-size: 20px; color: #8b0000; margin: 20px 0;">Will you be my Valentine? ❤️</div>
     <div class="response-section">
       <div class="response-label">Your answer:</div>
@@ -879,7 +879,7 @@ function showResultsScreen(state) {
         </label>
       </div>
     </div>
-    <div class="letter-signature">Forever Yours</div>
+    <div class="letter-signature">Forever Koopy</div>
   `;
 
   letterContainer.appendChild(letterPaper);
@@ -929,7 +929,7 @@ window.handleValentineResponse = function(checkbox, value) {
     // Create email body with the response
     const dateDetails = choices.map(c => `${c.question} ${c.selectedEmoji} ${c.selectedText}`).join('\n');
     const emailSubject = value === 'yes' ? '💕 YES! Valentine\'s Day Response' : 'Valentine\'s Day Response';
-    const emailBody = `Valentine's Day Game Response
+    const emailBody = `Koopy's Day Game Response
 
 Answer: ${value === 'yes' ? 'YES! 💕' : 'No 💔'}
 
@@ -941,7 +941,7 @@ Timestamp: ${new Date().toISOString()}
 `;
 
     // Send the data (using mailto: link)
-    const mailto = `mailto:YOUR_EMAIL@example.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+    const mailto = `mailto:wcia013twe@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
 
     // Show response message
     setTimeout(() => {
@@ -970,7 +970,7 @@ Timestamp: ${new Date().toISOString()}
         `;
       } else {
         message.innerHTML = `
-          💔 I understand... Perhaps another time? 💔
+          💔 urm what the sigma? 💔
           <br><br>
           <a href="${mailto}" class="restart-button" style="display: inline-block; text-decoration: none; margin: 10px;">
             📧 Send Response
